@@ -1,0 +1,90 @@
+package edu.iastate.cs228.hw4;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.HashSet;
+import java.util.Scanner;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+/**
+ * The main class responsible for decoding messages using the message tree class.
+ * It reads an encoded message from a specified file, constructs a message tree based on the
+ * provided structure, and decodes the binary characters using the constructed tree.
+ * The program decodes messages from 4 different .arch files.
+ * 
+ * @author Anish Nag
+ *
+ */
+public class Main {
+
+	/**
+	 * The main method that handles the decoding process.
+	 * 
+	 * @param args Command-line arguments (not used).
+	 * @throws IOException If an I/O error occurs while reading the input file.
+	 */
+	public static void main(String[] args) throws IOException {
+		// Input the name of the file that needs to be decrypted.
+		System.out.println("Input name of file that needs to be decrypted: ");
+
+		Scanner s = new Scanner(System.in);
+
+		String nameOfFile = s.nextLine();
+
+		s.close();
+
+		// Read the content of the file and trim any leading or trailing whitespace.
+		String messageEncoded = new String(Files.readAllBytes(Paths.get(nameOfFile))).trim();
+
+		// Find the position of the last newline character.
+		int present = messageEncoded.lastIndexOf('\n');
+
+		// Extract the structure and binary characters from the encoded message.
+		String structure = messageEncoded.substring(0, present);
+		
+		String binCharacters = messageEncoded.substring(present).trim();
+
+		// Create a set to store unique characters in the message structure.
+		Set<Character> objects = new HashSet<>();
+
+		// Convert the structure string to a char array and populate the set.
+		char[] arrayCh = structure.toCharArray();
+		
+		int ind = 0;
+
+		// Build the set of unique characters from the message structure.
+		while (ind < arrayCh.length) 
+			
+		{
+		    // Get the current character from the array
+		    char c = arrayCh[ind];
+
+		    // Check if the current character is not '^'
+		    if (c != '^') 
+		    {
+		        // Add the character to the set of unique characters
+		        objects.add(c);
+		    }
+
+		    // Move to the next character in the array
+		    ind += 1;
+		}
+
+		// Convert the set of characters to a string.
+		String charStr = objects.stream().map(String::valueOf).collect(Collectors.joining());
+
+		// Print the binary characters for reference.
+		System.out.println(binCharacters);
+
+		// Create the base of the message tree.
+		MsgTree base = new MsgTree(structure);
+
+		// Print the codes for each character in the message structure.
+		MsgTree.printCodes(base, charStr);
+
+		// Decode the binary characters using the constructed message tree.
+		base.messageDecoder(base, binCharacters);
+	}
+}
