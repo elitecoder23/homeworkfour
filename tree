@@ -1,0 +1,242 @@
+package edu.iastate.cs228.hw4;
+
+import java.util.Stack;
+
+/**
+ * Represents a message tree used for decoding encoded messages.
+ * Each node in the tree contains a payload character and references to its left and right subtrees.
+ * 
+ * @author Anish Nag
+ *
+ */
+public class MsgTree 
+{
+	public char payloadChar;
+	
+	public MsgTree pointLeft;
+	
+	public MsgTree pointRight;
+
+	private static int staticCharIdx = 0;
+
+	/**
+	 * Constructs a message tree based on the given encoding string.
+	 * 
+	 * @param strEncode The string representation of the message structure.
+	 */
+	public MsgTree(String strEncode) 
+	{
+	    // Check if the given encoding string is null or has insufficient length
+	    if (strEncode.length() < 2 || strEncode == null) 
+	    {
+	        // If so, return without constructing the message tree
+	        return;
+	    }
+
+	    // Create a stack to assist in constructing the message tree
+	    Stack<MsgTree> s = new Stack<>();
+
+	    // Initialize variables to keep track of the current position in the encoding string
+	    int indPresent = 0;
+
+	    // Set the payload character of the current node to the second character in the encoding string
+	    this.payloadChar = strEncode.charAt(indPresent += 1);
+
+	    // Push the current node onto the stack
+	    s.push(this);
+
+	    // Initialize a reference to the current node
+	    MsgTree select = this;
+
+	    // Variable to keep track of whether the previous operation was an 'in' or 'out'
+	    String pre = "in";
+
+	    // Iterate over the encoding string to construct the message tree
+	    while (indPresent < strEncode.length()) 
+	    {
+	        // Create a new node for the current character in the encoding string
+	        MsgTree n = new MsgTree(strEncode.charAt(indPresent));
+	        
+	        // Move to the next character in the encoding string
+	        indPresent += 1;
+
+	        // Check if the previous operation was 'in'
+	        if (pre.equals("in")) 
+	        {
+	            // Set the left subtree of the current node to the newly created node
+	            select.pointLeft = n;
+
+	            // Check if the payload character of the new node is '^'
+	            if (n.payloadChar == '^')
+	            {
+	                // If so, update the current node and push the new node onto the stack
+	                select = s.push(n);
+	                pre = "in";
+	            } else 
+	            {
+	                // If not, pop the current node from the stack
+	                if (!s.empty())
+	                    select = s.pop();
+	                
+	                // Set the previous operation to 'out'
+	                pre = "out";
+	            }
+
+	        } else { // previousOpt is out
+	            
+	            // Set the right subtree of the current node to the newly created node
+	            select.pointRight = n;
+
+	            // Check if the payload character of the new node is '^'
+	            if (n.payloadChar == '^') 
+	            {
+	                // If so, update the current node and push the new node onto the stack
+	                select = s.push(n);
+	                pre = "in";
+	            } else 
+	            {
+	                // If not, pop the current node from the stack
+	                if (!s.empty())
+	                    select = s.pop();
+	                
+	                // Set the previous operation to 'out'
+	                pre = "out";
+	            }
+	        }
+	    }
+	}
+	/**
+	 * Constructs a message tree node with the given payload character.
+	 * 
+	 * @param presentChar The payload character for the node.
+	 */
+	public MsgTree(char presentChar) 
+	{
+		this.payloadChar = presentChar;
+		
+		this.pointLeft = null;
+		
+		this.pointRight = null;
+	}
+
+	/**
+	 * Prints the codes for each character in the message structure.
+	 * 
+	 * @param root The root of the message tree.
+	 * @param code The binary code for each character.
+	 */
+	public static void printCodes(MsgTree root, String code) 
+	
+	{
+	    // Print header for the character codes
+	    System.out.println("character code\n---------------------");
+
+	    // Iterate over each character in the given binary code
+	    for (char presentChar : code.toCharArray()) 
+	    {
+	        // Retrieve the binary code for the current character from the message tree
+	        codeGet(root, presentChar, binary = "");
+
+	        // Print the character and its corresponding binary code
+	        System.out.println("    " + (presentChar == '\n' ? "\\n" : presentChar + " ") + "    " + binary);
+	    }
+	}
+
+	private static String binary;
+
+	/**
+	 * Recursively gets the binary code for a specific payload character.
+	 * 
+	 * @param base The current node being examined.
+	 * @param payloadChar The target payload character.
+	 * @param p The current binary code being constructed.
+	 * @return True if the payload character is found, false otherwise.
+	 */
+	private static boolean codeGet(MsgTree base, char payloadChar, String p) 
+	{
+	    // Check if the current node is not null
+	    if (base != null) 
+	    {
+	        // Check if the payload character of the current node matches the target payload character
+	        if (base.payloadChar == payloadChar) 
+	        {
+	            // Store the binary code in the 'binary' variable
+	            binary = p;
+	            
+	            // Indicate that the payload character has been found
+	            return true;
+	        }
+
+	        // Recursively search the left and right subtrees for the payload character
+	        return codeGet(base.pointLeft, payloadChar, p + "0") || codeGet(base.pointRight, payloadChar, p + "1");
+	    }
+
+	    // Indicate that the payload character was not found in the current subtree
+	    return false;
+	}
+
+	/**
+	 * Decodes the message using the provided message tree and binary characters.
+	 * 
+	 * @param passcode The root of the message tree.
+	 * @param m The binary characters to be decoded.
+	 */
+	public void messageDecoder(MsgTree passcode, String m) 
+	
+	{
+		// Prints out the message that is found from the decoding
+		System.out.println("MESSAGE:");
+
+		// Reads in the current node that is the convertible
+		MsgTree cur = passcode;
+
+		// Forms the decoded string into the plaintext message
+		StringBuilder buildString = new StringBuilder();
+
+		for (int i = 0; i < m.length(); i += 1) 
+			
+		{
+			char charPresent = m.charAt(i);
+
+			// Check left and right
+			cur = (charPresent == '0' ? cur.pointLeft : cur.pointRight);
+
+			// If it isn't the specified character, adds to string
+			if (cur.payloadChar != '^') 
+				
+			{
+				codeGet(passcode, cur.payloadChar, binary = "");
+				
+				buildString.append(cur.payloadChar);
+				
+				cur = passcode;
+			}
+		}
+
+		System.out.println(buildString.toString());
+
+		stat(m, buildString.toString());
+	}
+
+	/**
+	 * Extra credit: Prints out statistics for the average bits per character, total characters,
+	 * and the space saved after the message is decoded.
+	 * 
+	 * @param stringEnc The original encoded message.
+	 * @param stringDec The decoded plaintext message.
+	 */
+	private void stat(String stringEnc, String stringDec) {
+		// Looking at statistics for messages
+		System.out.println("STATISTICS:");
+
+		// Calculating the average bits per character since each character varies in bit number
+		System.out.println(String.format("Avg bits/char:\t%.1f", stringEnc.length() / (double) stringDec.length()));
+
+		// Calculating the total characters in the message
+		System.out.println("Total Characters:\t" + stringDec.length());
+
+		// How much space is saved after the message is decoded
+		System.out.println(String.format("Space Saving:\t%.1f%%",
+				(1d - stringDec.length() / (double) stringEnc.length()) * 100));
+	}
+}
